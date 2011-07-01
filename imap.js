@@ -943,6 +943,7 @@ function buildSearchQuery(options, isOrChild) {
         criteria = criteria.substr(1);
       }
       switch(criteria) {
+        case 'ALL':
         case 'ANSWERED':
         case 'DELETED':
         case 'DRAFT':
