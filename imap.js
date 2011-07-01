@@ -897,7 +897,6 @@ function buildSearchQuery(options, isOrChild) {
         case 'UID':
           if (!args)
             throw new Error('Incorrect number of arguments for search option: ' + criteria);
-          args = args.slice(1);
           try {
             validateUIDList(args);
           } catch(e) {
