@@ -39,9 +39,9 @@ function ImapConnection (options) {
     curXferred: 0,
     capabilities: [],
     box: {
-      _uidnext: 0,
-      _flags: [],
-      _newKeywords: false,
+      uidnext: 0,
+      flags: [],
+      newKeywords: false,
       validity: 0,
       keywords: [],
       permFlags: [],
@@ -250,22 +250,22 @@ ImapConnection.prototype.connect = function(loginCb) {
         break;
         case 'FLAGS':
           if (self._state.status === STATES.BOXSELECTING)
-            self._state.box._flags = data[2].substr(1, data[2].length-2).split(' ').map(function(flag) {return flag.substr(1);});;
+            self._state.box.flags = data[2].substr(1, data[2].length-2).split(' ').map(function(flag) {return flag.substr(1);});;
         break;
         case 'OK':
           if ((result = /^\[ALERT\] (.*)$/i.exec(data[2])) !== null)
             self.emit('alert', result[1]);
           else if (self._state.status === STATES.BOXSELECTING) {
             var result;
-            if ((result = /^\[UIDVALIDITY (\d+)\]$/i.exec(data[2])) !== null)
-              self._state.box.validity = result[1];
-            else if ((result = /^\[UIDNEXT (\d+)\]$/i.exec(data[2])) !== null)
-              self._state.box._uidnext = result[1];
-            else if ((result = /^\[PERMANENTFLAGS \((.*)\)\]$/i.exec(data[2])) !== null) {
+            if ((result = /^\[UIDVALIDITY (\d+)\]/i.exec(data[2])) !== null)
+              self._state.box.validity = parseInt(result[1]);
+            else if ((result = /^\[UIDNEXT (\d+)\]/i.exec(data[2])) !== null)
+              self._state.box.uidnext = parseInt(result[1]);
+            else if ((result = /^\[PERMANENTFLAGS \((.*?)\)\]/i.exec(data[2])) !== null) {
               self._state.box.permFlags = result[1].split(' ');
               var idx;
               if ((idx = self._state.box.permFlags.indexOf('\\*')) > -1) {
-                self._state.box._newKeywords = true;
+                self._state.box.newKeywords = true;
                 self._state.box.permFlags.splice(idx, 1);
               }
               self._state.box.keywords = self._state.box.permFlags.filter(function(flag) {return flag[0] !== '\\';});
@@ -615,7 +615,7 @@ ImapConnection.prototype.delFlags = function(uids, flags, cb) {
 };
 
 ImapConnection.prototype.addKeywords = function(uids, flags, cb) {
-  if (!self._state.box._newKeywords)
+  if (!self._state.box.newKeywords)
     throw new Error('This mailbox does not allow new keywords to be added');
   try {
     this._store(uids, flags, true, cb);
@@ -764,10 +764,10 @@ ImapConnection.prototype._reset = function() {
   this._resetBox();
 };
 ImapConnection.prototype._resetBox = function() {
-  this._state.box._uidnext = 0;
+  this._state.box.uidnext = 0;
   this._state.box.validity = 0;
-  this._state.box._flags = [];
-  this._state.box._newKeywords = false;
+  this._state.box.flags = [];
+  this._state.box.newKeywords = false;
   this._state.box.permFlags = [];
   this._state.box.keywords = [];
   this._state.box.name = null;
