@@ -119,10 +119,15 @@ ImapConnection.prototype.connect = function(loginCb) {
   this._state.conn.on('ready', function() {
     fnInit();
   });
-  this._state.conn.cleartext.on('data', function(data) {
+  this._state.conn.cleartext.on('data', function(data, splitted) {
     if (data.length === 0) return;
     var trailingCRLF = false, literalInfo;
     debug('\n<<RECEIVED>>: ' + util.inspect(data) + '\n');
+
+    if(self._state.remainingData && !splitted) {
+      data = self._state.remainingData + data;
+      self._state.remainingData = '';
+    }
 
     if (self._state.curExpected === 0) {
       if (data.indexOf(CRLF) === -1) {
@@ -211,13 +216,18 @@ ImapConnection.prototype.connect = function(loginCb) {
 
     if (data.length === 0)
       return;
-    data = data.split(CRLF).filter(isNotEmpty);
+    data = data.split(CRLF);
+    var lastCommand = data[data.length - 1];
+    data = data.filter(isNotEmpty);
 
     // Defer any extra server responses found in the incoming data
     if (data.length > 1) {
+      if (isNotEmpty(lastCommand)) {
+        self._state.remainingData = data.pop();
+      }
       data.slice(1).forEach(function(line) {
         process.nextTick(function() {
-          self._state.conn.cleartext.emit('data', line + CRLF);
+          self._state.conn.cleartext.emit('data', line + CRLF, true);
         });
       });
     }
